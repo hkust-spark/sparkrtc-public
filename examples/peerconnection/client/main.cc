@@ -68,13 +68,23 @@ WindowsCommandLineArguments::WindowsCommandLineArguments() {
   LocalFree(wide_argv);
 }
 
+class CustomSocketServer : public rtc::PhysicalSocketServer {
+ public:
+  bool Wait(webrtc::TimeDelta max_wait_duration, bool process_io) override {
+    if (!process_io)
+      return true;
+    return rtc::PhysicalSocketServer::Wait(webrtc::TimeDelta::Zero(),
+                                           process_io);
+  }
+};
+
 }  // namespace
 int PASCAL wWinMain(HINSTANCE instance,
                     HINSTANCE prev_instance,
                     wchar_t* cmd_line,
                     int cmd_show) {
   rtc::WinsockInitializer winsock_init;
-  rtc::PhysicalSocketServer ss;
+  CustomSocketServer ss;
   rtc::AutoSocketServerThread main_thread(&ss);
 
   WindowsCommandLineArguments win_args;
@@ -108,6 +118,7 @@ int PASCAL wWinMain(HINSTANCE instance,
   PeerConnectionClient client;
   auto conductor = rtc::make_ref_counted<Conductor>(&client, &wnd);
 
+  main_thread.Start();
   // Main loop.
   MSG msg;
   BOOL gm;
