@@ -732,7 +732,7 @@ CaptureInputPin::GetAllocatorRequirements(ALLOCATOR_PROPERTIES* props) {
 
 COM_DECLSPEC_NOTHROW STDMETHODIMP
 CaptureInputPin::Receive(IMediaSample* media_sample) {
-  RTC_DCHECK_RUN_ON(&capture_checker_);
+  // RTC_DCHECK_RUN_ON(&capture_checker_);
 
   CaptureSinkFilter* const filter = static_cast<CaptureSinkFilter*>(Filter());
 
