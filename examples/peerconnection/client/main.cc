@@ -26,6 +26,8 @@
 #include "rtc_base/ssl_adapter.h"
 #include "rtc_base/string_utils.h"  // For ToUtf8
 #include "rtc_base/win32_socket_init.h"
+#include "rtc_base/logging.h"
+#include "rtc_base/log_sinks.h"
 #include "system_wrappers/include/field_trial.h"
 #include "test/field_trial.h"
 
@@ -92,6 +94,13 @@ int PASCAL wWinMain(HINSTANCE instance,
   char** argv = win_args.argv();
 
   absl::ParseCommandLine(argc, argv);
+
+  rtc::LogMessage::LogTimestamps(true);
+  rtc::LogMessage::LogThreads(true);
+
+  rtc::FileRotatingLogSink frls("C:\\Codes\\webrtc\\src\\out\\Default\\logs", "webrtc", 1024, 2);
+  frls.Init();
+  rtc::LogMessage::AddLogToStream(&frls, rtc::LS_VERBOSE);
 
   // InitFieldTrialsFromString stores the char*, so the char array must outlive
   // the application.

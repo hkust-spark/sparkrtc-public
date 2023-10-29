@@ -705,6 +705,7 @@ if (is_linux || is_chromeos || is_win) {
       "../pc:video_track_source",
       "../rtc_base:checks",
       "../rtc_base:logging",
+      "../rtc_base:log_sinks",
       "../rtc_base:macromagic",
       "../rtc_base:net_helpers",
       "../rtc_base:refcount",
