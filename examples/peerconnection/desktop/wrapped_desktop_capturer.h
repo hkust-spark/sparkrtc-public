@@ -14,13 +14,13 @@
 
 namespace webrtc {
 
-class OutDesktopCapturer : public TestDesktopCapturer,
+class WrappedDesktopCapturer : public TestDesktopCapturer,
                        public DesktopCapturer::Callback,
                        public rtc::VideoSinkInterface<VideoFrame> {
  public:
-  static OutDesktopCapturer* Create(size_t target_fps, size_t capture_screen_index);
+  static WrappedDesktopCapturer* Create(size_t target_fps, size_t capture_screen_index);
 
-  ~OutDesktopCapturer() override;
+  ~WrappedDesktopCapturer() override;
 
   void StartCapture();
   void StopCapture();
@@ -30,7 +30,7 @@ class OutDesktopCapturer : public TestDesktopCapturer,
   std::string GetWindowTitle() const { return window_title_; }
 
  private:
-  OutDesktopCapturer();
+  WrappedDesktopCapturer();
   bool Init(size_t target_fps, size_t capture_screen_index);
   void Destory();
 

@@ -815,8 +815,8 @@ if (is_linux || is_chromeos || is_win) {
       "peerconnection/desktop/defaults.h",
       "peerconnection/desktop/peer_connection_desktop.cc",
       "peerconnection/desktop/peer_connection_desktop.h",
-      "peerconnection/desktop/desktop_capture.cc",
-      "peerconnection/desktop/desktop_capture.h",
+      "peerconnection/desktop/wrapped_desktop_capturer.cc",
+      "peerconnection/desktop/wrapped_desktop_capturer.h",
       "peerconnection/desktop/test_desktop_capturer.cc",
       "peerconnection/desktop/test_desktop_capturer.h",
     ]

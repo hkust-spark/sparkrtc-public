@@ -51,7 +51,7 @@
 #include "rtc_base/rtc_certificate_generator.h"
 #include "rtc_base/strings/json.h"
 #include "test/vcm_capturer.h"
-#include "examples/peerconnection/desktop/desktop_capture.h"
+#include "examples/peerconnection/desktop/wrapped_desktop_capturer.h"
 #include "examples/peerconnection/desktop/test_desktop_capturer.h"
 
 namespace {
@@ -82,9 +82,9 @@ class CapturerTrackSource : public webrtc::VideoTrackSource {
   static rtc::scoped_refptr<CapturerTrackSource> Create() {
     const size_t kFps = 30;
     const size_t kScreenIndex = 0;
-    std::unique_ptr<webrtc::OutDesktopCapturer> capturer;
+    std::unique_ptr<webrtc::WrappedDesktopCapturer> capturer;
     capturer = absl::WrapUnique(
-      webrtc::OutDesktopCapturer::Create(kFps, kScreenIndex));
+      webrtc::WrappedDesktopCapturer::Create(kFps, kScreenIndex));
     if (capturer) {
 		  capturer->StartCapture();
 		  return rtc::make_ref_counted<CapturerTrackSource>(std::move(capturer));
@@ -98,14 +98,14 @@ class CapturerTrackSource : public webrtc::VideoTrackSource {
 
  protected:
   explicit CapturerTrackSource(
-      std::unique_ptr<webrtc::OutDesktopCapturer> capturer)
+      std::unique_ptr<webrtc::WrappedDesktopCapturer> capturer)
       : VideoTrackSource(/*remote=*/false), capturer_(std::move(capturer)) {}
 
  private:
   rtc::VideoSourceInterface<webrtc::VideoFrame>* source() override {
     return capturer_.get();
   }
-  std::unique_ptr<webrtc::OutDesktopCapturer> capturer_;
+  std::unique_ptr<webrtc::WrappedDesktopCapturer> capturer_;
   bool m_screencast = true;
 };
 

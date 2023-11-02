@@ -109,7 +109,7 @@ int PASCAL wWinMain(HINSTANCE instance,
   rtc::LogMessage::LogTimestamps(true);
   rtc::LogMessage::LogThreads(true);
 
-  rtc::CallSessionFileRotatingLogSink frls("./logs", 10 << 20);
+  rtc::FileRotatingLogSink frls("./logs", "log_" + std::to_string(::time(NULL)), 10 << 20, 10);
   frls.Init();
   rtc::LogMessage::AddLogToStream(&frls, rtc::LS_VERBOSE);
 
