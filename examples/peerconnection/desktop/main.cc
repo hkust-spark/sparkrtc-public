@@ -103,6 +103,9 @@ int PASCAL wWinMain(HINSTANCE instance,
 
   absl::ParseCommandLine(argc, argv);
 
+  // If the ./logs directory doesn't exist, create it.
+  CreateDirectoryA("./logs", NULL);
+
   static const std::string  event_log_file_name = "./logs/rtc_event_" + std::to_string(::time(NULL))+ ".json";
   rtc::tracing::StartInternalCapture(event_log_file_name.c_str());
 

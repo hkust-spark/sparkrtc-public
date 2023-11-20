@@ -24,6 +24,7 @@
 #include "examples/peerconnection/client/peer_connection_client.h"
 #include "rtc_base/checks.h"
 #include "rtc_base/ssl_adapter.h"
+#include "rtc_base/event_tracer.h"
 #include "rtc_base/string_utils.h"  // For ToUtf8
 #include "rtc_base/win32_socket_init.h"
 #include "rtc_base/logging.h"
@@ -92,13 +93,20 @@ int PASCAL wWinMain(HINSTANCE instance,
   WindowsCommandLineArguments win_args;
   int argc = win_args.argc();
   char** argv = win_args.argv();
+  rtc::tracing::SetupInternalTracer();
 
   absl::ParseCommandLine(argc, argv);
+
+  // If the ./logs directory doesn't exist, create it.
+  CreateDirectoryA("./logs", NULL);
+
+  static const std::string  event_log_file_name = "./logs/rtc_event_" + std::to_string(::time(NULL))+ ".json";
+  rtc::tracing::StartInternalCapture(event_log_file_name.c_str());
 
   rtc::LogMessage::LogTimestamps(true);
   rtc::LogMessage::LogThreads(true);
 
-  rtc::FileRotatingLogSink frls("C:\\Codes\\webrtc\\src\\out\\Default\\logs", "webrtc", 1024, 2);
+  rtc::FileRotatingLogSink frls("./logs", "log_" + std::to_string(::time(NULL)), 10 << 20, 10);
   frls.Init();
   rtc::LogMessage::AddLogToStream(&frls, rtc::LS_VERBOSE);
 
