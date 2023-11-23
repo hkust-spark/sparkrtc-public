@@ -27,6 +27,10 @@ Clone the current repo:
 ```
 git clone https://github.com/hkust-spark/sparkrtc.git
 ```
+Enter the root directory of the repo:
+```
+cd ./sparkrtc
+```
 Clone the submodules ([openh264](https://github.com/hkust-spark/openh264) and [ffmpeg](https://github.com/hkust-spark/openh264)), which are also modified by us:
 ```
 git submodule update --init --recursive
@@ -44,7 +48,7 @@ The checkout size is large due the use of the Chromium build toolchain and many 
 [Ninja](https://ninja-build.org/) is the default build system for all platforms.
 [Ninja](https://ninja-build.org/) project files are generated using [GN](https://gn.googlesource.com/gn/+/master/README.md). They're put in a directory of your choice, like `out/Debug`, but you can use any directory for keeping multiple configurations handy.
 
-To generate project files using the defaults (Debug build), run (standing in the src/ directory of your checkout):
+To generate project files using the defaults (Debug build), run (in the root directory of the repo):
 ```
 gn gen out/Default
 ```
