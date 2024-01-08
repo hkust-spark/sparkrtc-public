@@ -80,3 +80,5 @@
 !webrtc/*
 
 .gclient_*
+*.lib
+*.dll

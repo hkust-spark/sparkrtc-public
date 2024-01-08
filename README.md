@@ -92,3 +92,36 @@ Start any number of `peerconnection_clients` and connect them to the server. The
 **Ending connection:** Press Esc and you will now be able to select which server to connect to.
 
 For more guidelines, see [here](https://webrtc.github.io/webrtc-org/native-code/development/).
+
+# Local Video Guidelines
+
+We implemented a ``peerconnection_localvideo`` example modified from ``peerconnection_client`` on MacOS and Linux for testing purposes. It streams s local video sequence (YUV420) instead of capturing from cameras. The GUI is optionally removed for command line testing.
+
+
+## CLI Options:
+
+1. Start peerconnection_server
+
+```
+./peerconnection_server
+```
+
+2. Start the receiver with the filename of the received yuv file.
+
+```
+./peerconnection_localvideo --recon "recon.yuv"
+```
+
+
+By default, the GUI is turned off. Add ```--gui``` on receiver to open the rendered view:
+```
+./peerconnection_localvideo --gui --recon "recon.yuv"
+```
+
+
+3. Start the sender(Should after receiver) with information of yuv file to be streamed.
+
+```
+./peerconnection_localvideo --file "input.yuv" --height 1080 --width 1920 --fps 24
+```
+

@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
   socket_server.set_conductor(conductor.get());
 
   thread.Run();
-
+  
   // gtk_main();
   wnd.Destroy();
 

@@ -150,7 +150,7 @@ bool DataSocket::Send(const std::string& status,
 
   buffer += "\r\n";
   buffer += data;
-
+  fprintf(stderr, "Send: %s\n", buffer.c_str());
   return Send(buffer);
 }
 
