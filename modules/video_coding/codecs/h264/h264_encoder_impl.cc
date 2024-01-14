@@ -508,6 +508,7 @@ int32_t H264EncoderImpl::Encode(
       // API doc says ForceIntraFrame(false) does nothing, but calling this
       // function forces a key frame regardless of the `bIDR` argument's value.
       // (If every frame is a key frame we get lag/delays.)
+      RTC_LOG(LS_INFO) << "LOG Sending keyframe";
       encoders_[i]->ForceIntraFrame(true);
       configurations_[i].key_frame_request = false;
     }
@@ -542,6 +543,10 @@ int32_t H264EncoderImpl::Encode(
     // `encoded_image_`.
     RtpFragmentize(&encoded_images_[i], &info);
 
+    // print packet size
+    if (encoded_images_[i].size() > 0)
+      RTC_LOG (LS_INFO) << "LOGSEND " << encoded_images_[i].size()<< " " << input_frame.ntp_time_ms();
+    
     // Encoder can skip frames to save bandwidth in which case
     // `encoded_images_[i]._length` == 0.
     if (encoded_images_[i].size() > 0) {

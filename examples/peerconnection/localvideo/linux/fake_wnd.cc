@@ -212,7 +212,8 @@ void FakeMainWnd::VideoRenderer::OnFrame(const webrtc::VideoFrame& video_frame) 
   // little-endian format, with B in the first byte in memory, regardless of
   // native endianness.
 if (!is_sender){
-    RTC_LOG(LS_INFO) << __FUNCTION__ << " write to file";
+
+    RTC_LOG(LS_INFO) << __FUNCTION__ << " write to file" << rtc::TimeMillis();
     fwrite(buffer->DataY(), 1, buffer->width() * buffer->height(), file_);
     fwrite(buffer->DataU(), 1, buffer->width() * buffer->height() / 4, file_);
     fwrite(buffer->DataV(), 1, buffer->width() * buffer->height() / 4, file_);

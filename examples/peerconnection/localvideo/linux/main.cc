@@ -24,7 +24,11 @@
 #include "rtc_base/thread.h"
 #include "system_wrappers/include/field_trial.h"
 #include "test/field_trial.h"
+#include "rtc_base/event_tracer.h"
+#include "rtc_base/logging.h"
+#include "rtc_base/log_sinks.h"
 
+#include <sys/stat.h>
 std::string local_video_filename;
 std::string recon_filename;
 int local_video_width;
@@ -130,6 +134,26 @@ int main(int argc, char* argv[]) {
   local_video_fps = absl::GetFlag(FLAGS_fps);
   is_GUI = absl::GetFlag(FLAGS_gui);
   
+  std::string logname = absl::GetFlag(FLAGS_logname);
+
+  // If the ./logs directory doesn't exist, create it.
+  struct stat st = {0};
+  if (stat("./logs", &st) == -1) {
+    mkdir("./logs", 0700);
+  }
+
+
+  
+
+  static const std::string  event_log_file_name = "./logs/rtc_event_" + std::to_string(::time(NULL))+ ".json";
+  rtc::tracing::StartInternalCapture(event_log_file_name.c_str());
+
+  rtc::LogMessage::LogTimestamps(true);
+  rtc::LogMessage::LogThreads(true);
+
+  rtc::FileRotatingLogSink frls("./logs", logname + std::to_string(::time(NULL)), 10 << 20, 10);
+  frls.Init();
+  rtc::LogMessage::AddLogToStream(&frls, rtc::LS_VERBOSE);
 
   bool autocall = false;
   if (local_video_filename != "NONE") {

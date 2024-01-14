@@ -47,6 +47,11 @@ default_args = {
   # component builds.
   is_component_build = false
 
+  rtc_use_h264 = true # Enable H264 support.
+  rtc_include_tests = false 
+  proprietary_codecs=true 
+  ffmpeg_branding = "Chrome" # Enabling ffmpeg h264 decoding
+  
   mac_sdk_min = "10.12"
 
   ios_deployment_target = "12.0"

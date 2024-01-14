@@ -32,6 +32,7 @@ extern "C" {
 #include "common_video/include/video_frame_buffer.h"
 #include "modules/video_coding/codecs/h264/h264_color_space.h"
 #include "rtc_base/checks.h"
+#include "rtc_base/time_utils.h"
 #include "rtc_base/logging.h"
 #include "system_wrappers/include/metrics.h"
 
@@ -621,6 +622,8 @@ int32_t H264DecoderImpl::Decode(const EncodedImage& input_image,
   // interface to pass a VideoFrameBuffer instead of a VideoFrame?
   decoded_image_callback_->Decoded(decoded_frame, absl::nullopt, qp);
 
+  //print time and size
+  RTC_LOG(LS_INFO) << "LOGREC " << input_image.size() <<" "  << rtc::TimeMillis();
   // Stop referencing it, possibly freeing `input_frame`.
   av_frame_unref(av_frame_.get());
   input_frame = nullptr;
