@@ -57,6 +57,9 @@
 #include "video/frame_cadence_adapter.h"
 #include "video/frame_dumping_encoder.h"
 
+#include <openssl/md5.h>
+
+#define AV1_ENCODING 1
 namespace webrtc {
 
 namespace {
@@ -82,6 +85,9 @@ const int64_t kParameterUpdateIntervalMs = 1000;
 constexpr int kMaxAnimationPixels = 1280 * 720;
 
 constexpr int kDefaultMinScreenSharebps = 1200000;
+
+int64_t captured_time;
+int64_t encoded_time;
 
 int GetNumSpatialLayers(const VideoCodec& codec) {
   if (codec.codecType == kVideoCodecVP9) {
@@ -2032,6 +2038,8 @@ void VideoStreamEncoder::EncodeVideoFrame(const VideoFrame& video_frame,
 
   frame_encode_metadata_writer_.OnEncodeStarted(out_frame);
 
+  captured_time = out_frame.ntp_time_ms();
+
   const int32_t encode_status = encoder_->Encode(out_frame, &next_frame_types_);
   was_encode_called_since_last_initialization_ = true;
 
@@ -2129,11 +2137,43 @@ EncodedImage VideoStreamEncoder::AugmentEncodedImage(
   return image_copy;
 }
 
+std::string get_md5_from_encoded_image(const EncodedImage& encoded_image) {
+  // should include <openssl/md5.h>
+  unsigned char md5[16];
+  MD5_CTX ctx;
+  MD5_Init(&ctx);
+
+#if AV1_ENCODING
+  MD5_Update(&ctx, encoded_image.data() + 2, encoded_image.size() - 2); // I dont know why but there is a header of 2 bytes for AV1. Need to remove it to match the decoder
+#else
+  MD5_Update(&ctx, encoded_image.data(), encoded_image.size());
+#endif
+  MD5_Final(md5, &ctx);
+  // get string from md5
+  char md5string[33];
+  for (int i = 0; i < 16; ++i) {
+    sprintf(&md5string[i * 2], "%02x", (unsigned int)md5[i]);
+  }
+
+  std::string md5_(md5string);
+  return md5_;
+}
 EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
     const EncodedImage& encoded_image,
     const CodecSpecificInfo* codec_specific_info) {
   TRACE_EVENT_INSTANT1("webrtc", "VCMEncodedFrameCallback::Encoded",
                        "timestamp", encoded_image.RtpTimestamp());
+
+  
+  encoded_time = rtc::TimeMillis();
+  std::string md5_str = get_md5_from_encoded_image(encoded_image);
+
+#if AV1_ENCODING
+  int f_size = encoded_image.size() - 2;
+#else
+  int f_size = encoded_image.size();
+#endif
+  RTC_LOG(LS_INFO)  << "LOG_SEND|size|captured_time|encoded_time|md5 " <<f_size << " " << captured_time << " " << encoded_time << " " << md5_str;
 
   const size_t simulcast_index = encoded_image.SimulcastIndex().value_or(0);
   const VideoCodecType codec_type = codec_specific_info
@@ -2192,6 +2232,8 @@ EncodedImageCallback::Result VideoStreamEncoder::OnEncodedImage(
   // encoded data itself, to the post encode function. Since we cannot be sure
   // the pointer will still be valid when run on the task queue, set it to null.
   DataSize frame_size = DataSize::Bytes(image_copy.size());
+
+  
   image_copy.ClearEncodedData();
 
   int temporal_index = 0;
