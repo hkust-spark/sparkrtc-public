@@ -174,7 +174,9 @@ FakeMainWnd::VideoRenderer::VideoRenderer(
       rendered_track_(track_to_render) {
   rendered_track_->AddOrUpdateSink(this, rtc::VideoSinkWants());
 // Open file to write
-  file_ = fopen(recon_filename.c_str(), "wb");
+  if (!is_sender) {
+    file_ = fopen(recon_filename.c_str(), "wb");
+  }
 }
 
 FakeMainWnd::VideoRenderer::~VideoRenderer() {
