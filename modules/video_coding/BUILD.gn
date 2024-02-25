@@ -9,6 +9,12 @@
 import("//third_party/libaom/options.gni")
 import("../../webrtc.gni")
 
+config("external_opencv_library") {
+  include_dirs = [ 
+    "/usr/include/opencv4",
+  ]
+}
+
 rtc_library("encoded_frame") {
   visibility = [ "*" ]
   sources = [
@@ -198,6 +204,27 @@ rtc_library("video_coding") {
     "video_codec_initializer.cc",
     "video_receiver2.cc",
     "video_receiver2.h",
+  ]
+
+  configs += [
+    ":external_opencv_library",
+  ]
+
+  libs = [ 
+    "opencv_core", 
+    "opencv_imgproc", 
+    "opencv_imgcodecs",
+    "opencv_videoio",
+    "opencv_highgui",
+    "opencv_video",
+    "opencv_calib3d",
+    "opencv_features2d",
+    "opencv_objdetect",
+    "opencv_dnn",
+    "opencv_ml",
+    "opencv_flann",
+    "opencv_photo",
+    "opencv_stitching",
   ]
 
   deps = [
