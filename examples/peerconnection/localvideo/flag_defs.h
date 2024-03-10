@@ -31,7 +31,7 @@ ABSL_FLAG(bool,
           "intervention.");
 ABSL_FLAG(std::string, server, "127.0.0.1", "The server to connect to.");
 
-ABSL_FLAG(std::string, logname, "logg", "Logfilename.");
+ABSL_FLAG(std::string, logname, "NONE", "Logfilename.");
 
 ABSL_FLAG(std::string, file, "NONE", "The video file to stream to the peer.");
 

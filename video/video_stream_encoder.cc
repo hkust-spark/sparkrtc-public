@@ -1664,7 +1664,6 @@ VideoStreamEncoder::UpdateBitrateAllocation(
                         << adjusted_allocation.ToString();
     new_rate_settings.rate_control.bitrate = adjusted_allocation;
   }
-
   return new_rate_settings;
 }
 

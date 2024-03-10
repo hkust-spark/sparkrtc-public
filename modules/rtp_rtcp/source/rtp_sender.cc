@@ -268,7 +268,7 @@ void RTPSender::SetRtxPayloadType(int payload_type,
 
 int32_t RTPSender::ReSendPacket(uint16_t packet_id) {
   int32_t packet_size = 0;
-  const bool rtx = (RtxStatus() & kRtxRetransmitted) > 0;
+  const bool rtx = (RtxStatus() & kRtxRetransmitted) > 0; 
 
   std::unique_ptr<RtpPacketToSend> packet =
       packet_history_->GetPacketAndMarkAsPending(
@@ -335,6 +335,8 @@ void RTPSender::OnReceivedAckOnRtxSsrc(
 void RTPSender::OnReceivedNack(
     const std::vector<uint16_t>& nack_sequence_numbers,
     int64_t avg_rtt) {
+  RTC_LOG(LS_INFO) << "LOGNACK for "
+                << nack_sequence_numbers.size() << " packets.";
   packet_history_->SetRtt(TimeDelta::Millis(5 + avg_rtt));
   for (uint16_t seq_no : nack_sequence_numbers) {
     const int32_t bytes_sent = ReSendPacket(seq_no);
@@ -463,9 +465,11 @@ std::vector<std::unique_ptr<RtpPacketToSend>> RTPSender::GeneratePadding(
 
 void RTPSender::EnqueuePackets(
     std::vector<std::unique_ptr<RtpPacketToSend>> packets) {
+
   RTC_DCHECK(!packets.empty());
   Timestamp now = clock_->CurrentTime();
   for (auto& packet : packets) {
+    RTC_LOG(LS_INFO) << "Packet ID:" << packet->Timestamp();
     RTC_DCHECK(packet);
     RTC_CHECK(packet->packet_type().has_value())
         << "Packet type must be set before sending.";

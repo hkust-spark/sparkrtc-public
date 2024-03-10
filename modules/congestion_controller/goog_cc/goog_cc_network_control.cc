@@ -322,8 +322,9 @@ NetworkControlUpdate GoogCcNetworkController::OnStreamsConfig(
   }
 
   bool pacing_changed = false;
-  if (msg.pacing_factor && *msg.pacing_factor != pacing_factor_) {
-    pacing_factor_ = *msg.pacing_factor;
+  if (1) {
+    // pacing_factor_ = *msg.pacing_factor;
+  pacing_factor_ = 100.0f;
     pacing_changed = true;
   }
   if (msg.min_total_allocated_bitrate &&
@@ -451,6 +452,7 @@ NetworkControlUpdate GoogCcNetworkController::OnTransportPacketsFeedback(
     TimeDelta propagation_rtt = feedback_rtt - min_pending_time;
     max_feedback_rtt = std::max(max_feedback_rtt, feedback_rtt);
     min_propagation_rtt = std::min(min_propagation_rtt, propagation_rtt);
+    //
   }
 
   if (max_feedback_rtt.IsFinite()) {
@@ -639,6 +641,9 @@ void GoogCcNetworkController::MaybeTriggerOnNetworkChanged(
   uint8_t fraction_loss = bandwidth_estimation_->fraction_loss();
   TimeDelta round_trip_time = bandwidth_estimation_->round_trip_time();
   DataRate loss_based_target_rate = bandwidth_estimation_->target_rate();
+
+  // loss_based_target_rate  = DataRate::BitsPerSec( loss_based_target_rate.bps() * 0.8);
+  // loss_based_target_rate  = DataRate::BitsPerSec( 6000000);
   DataRate pushback_target_rate = loss_based_target_rate;
 
   BWE_TEST_LOGGING_PLOT(1, "fraction_loss_%", at_time.ms(),
@@ -695,7 +700,7 @@ void GoogCcNetworkController::MaybeTriggerOnNetworkChanged(
     target_rate_msg.network_estimate.bwe_period = bwe_period;
 
     update->target_rate = target_rate_msg;
-
+    
     auto probes = probe_controller_->SetEstimatedBitrate(
         loss_based_target_rate,
         GetBandwidthLimitedCause(
@@ -727,6 +732,12 @@ PacerConfig GoogCcNetworkController::GetPacingRates(Timestamp at_time) const {
         std::max(min_total_allocated_bitrate_, last_loss_based_target_rate_) *
         pacing_factor_;
   }
+
+  RTC_LOG(LS_INFO) << "Pacing factor: " << pacing_factor_ << " pacing_rate: "
+                   << pacing_rate.bps() << " min_total_allocated_bitrate: "
+                   << min_total_allocated_bitrate_.bps()
+                   << " last_loss_based_target_rate: "
+                   << last_loss_based_target_rate_.bps();
   DataRate padding_rate =
       std::min(max_padding_rate_, last_pushback_target_rate_);
   PacerConfig msg;

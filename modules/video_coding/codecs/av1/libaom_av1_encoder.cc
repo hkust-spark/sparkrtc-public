@@ -40,7 +40,7 @@
 #include "third_party/libaom/source/libaom/aom/aom_codec.h"
 #include "third_party/libaom/source/libaom/aom/aom_encoder.h"
 #include "third_party/libaom/source/libaom/aom/aomcx.h"
-
+#define ACTION 1
 #define SET_ENCODER_PARAM_OR_RETURN_ERROR(param_id, param_value) \
   do {                                                           \
     if (!SetEncoderControlParameters(param_id, param_value)) {   \
@@ -231,7 +231,9 @@ int LibaomAv1Encoder::InitEncode(const VideoCodec* codec_settings,
   cfg_.g_w = encoder_settings_.width;
   cfg_.g_h = encoder_settings_.height;
   cfg_.g_threads =
-      NumberOfThreads(cfg_.g_w, cfg_.g_h, settings.number_of_cores);
+      16;
+  RTC_LOG(LS_INFO) << "LibaomAv1Encoder::InitEncode set threads to "
+                   << cfg_.g_threads << ".";
   cfg_.g_timebase.num = 1;
   cfg_.g_timebase.den = kRtpTicksPerSecond;
   cfg_.rc_target_bitrate = encoder_settings_.startBitrate;  // kilobits/sec.
@@ -271,9 +273,13 @@ int LibaomAv1Encoder::InitEncode(const VideoCodec* codec_settings,
   }
   inited_ = true;
 
+  int speed = GetCpuSpeed(cfg_.g_w, cfg_.g_h);
+  speed = 10;
+  RTC_LOG(LS_INFO) << "LibaomAv1Encoder::EncodeInit set speed to " << speed
+                   << ".";
   // Set control parameters
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AOME_SET_CPUUSED,
-                                    GetCpuSpeed(cfg_.g_w, cfg_.g_h));
+                                    speed);
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AV1E_SET_ENABLE_CDEF, 1);
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AV1E_SET_ENABLE_TPL_MODEL, 0);
   SET_ENCODER_PARAM_OR_RETURN_ERROR(AV1E_SET_DELTAQ_MODE, 0);
@@ -546,12 +552,44 @@ void LibaomAv1Encoder::MaybeRewrapImgWithFormat(const aom_img_fmt_t fmt) {
   // else no-op since the image is already in the right format.
 }
 
+int key_count = 0;
+
+#if ACTION
+unsigned int last_bitrate = -1;
+int action_holder = -1;
+#endif
 int32_t LibaomAv1Encoder::Encode(
     const VideoFrame& frame,
     const std::vector<VideoFrameType>* frame_types) {
   if (!inited_ || encoded_image_callback_ == nullptr || !rates_configured_) {
     return WEBRTC_VIDEO_CODEC_UNINITIALIZED;
   }
+  unsigned int cur_bitrate = cfg_.rc_target_bitrate;
+  RTC_LOG(LS_INFO) << "CODINGBitrate: " << cur_bitrate;
+#if ACTION
+  
+  if (last_bitrate * 0.6 > cur_bitrate && key_count > 10) {
+    action_holder = 5;
+    cfg_.rc_min_quantizer = 38; 
+    RTC_LOG(LS_INFO) << last_bitrate << " " << cur_bitrate <<  " LOGACTION 0";
+  }
+  else if(action_holder > -1) {
+    action_holder--;
+    RTC_LOG(LS_INFO) << last_bitrate << " " << cur_bitrate <<  " LOGACTION 2";
+  }
+  else {
+    cfg_.rc_min_quantizer = kQpMin;
+    RTC_LOG(LS_INFO) << last_bitrate << " " << cur_bitrate <<  " LOGACTION 1";
+  }
+  // send cfg_ to encoder
+  aom_codec_err_t error_code = aom_codec_enc_config_set(&ctx_, &cfg_);
+  if (error_code != AOM_CODEC_OK) {
+    RTC_LOG(LS_WARNING) << "Change QP error"
+                        << error_code;
+  }
+  last_bitrate = cur_bitrate;
+#endif
+
 
   bool keyframe_required =
       frame_types != nullptr &&
@@ -658,6 +696,11 @@ int32_t LibaomAv1Encoder::Encode(
     }
     const bool end_of_picture = (next_layer_frame == layer_frames.end());
 
+    key_count++;
+    // if (key_count % 30 == 0) {
+    //   layer_frame->Keyframe();
+    //   RTC_LOG(LS_INFO) << "Forcing keyframe";
+    // }
     aom_enc_frame_flags_t flags =
         layer_frame->IsKeyframe() ? AOM_EFLAG_FORCE_KF : 0;
 
@@ -781,19 +824,24 @@ void LibaomAv1Encoder::SetRates(const RateControlParameters& parameters) {
     RTC_LOG(LS_WARNING) << "Attempt to set target bit rate to zero";
     return;
   }
-
+  //
   // The bitrates caluclated internally in libaom when `AV1E_SET_SVC_PARAMS` is
   // called depends on the currently configured `rc_target_bitrate`. If the
   // total target bitrate is not updated first a division by zero could happen.
   svc_controller_->OnRatesUpdated(parameters.bitrate);
-  cfg_.rc_target_bitrate = parameters.bitrate.get_sum_kbps();
+  unsigned int cur_bitrate = parameters.bitrate.get_sum_kbps();
+  
+  RTC_LOG(LS_INFO) << "LibaomAv1Encoder::SetRates " << cur_bitrate << " kbps";
+  cfg_.rc_target_bitrate = cur_bitrate;
+  
+  // cfg_.rc_min_quantizer = 45; 
   aom_codec_err_t error_code = aom_codec_enc_config_set(&ctx_, &cfg_);
   if (error_code != AOM_CODEC_OK) {
     RTC_LOG(LS_WARNING) << "Error configuring encoder, error code: "
                         << error_code;
   }
 
-  if (SvcEnabled()) {
+  if (SvcEnabled())  {
     for (int sid = 0; sid < svc_params_->number_spatial_layers; ++sid) {
       // libaom bitrate for spatial id S and temporal id T means bitrate
       // of frames with spatial_id=S and temporal_id<=T

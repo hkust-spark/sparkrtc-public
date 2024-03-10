@@ -127,11 +127,12 @@ TrendlineEstimatorSettings::TrendlineEstimatorSettings(
           "Enabled")) {
     window_size = ReadTrendlineFilterWindowSize(key_value_config);
   }
-  Parser()->Parse(key_value_config->Lookup(TrendlineEstimatorSettings::kKey));
-  if (window_size < 10 || 200 < window_size) {
-    RTC_LOG(LS_WARNING) << "Window size must be between 10 and 200 packets";
-    window_size = kDefaultTrendlineWindowSize;
-  }
+  // window_size = 5; //CHANGEPOINT 
+  // Parser()->Parse(key_value_config->Lookup(TrendlineEstimatorSettings::kKey));
+  // if (window_size < 10 || 200 < window_size) {
+  //   RTC_LOG(LS_WARNING) << "Window size must be between 10 and 200 packets";
+  //   window_size = kDefaultTrendlineWindowSize;
+  // }
   if (enable_cap) {
     if (beginning_packets < 1 || end_packets < 1 ||
         beginning_packets > window_size || end_packets > window_size) {
@@ -201,7 +202,8 @@ void TrendlineEstimator::UpdateTrendline(double recv_delta_ms,
                                          double send_delta_ms,
                                          int64_t send_time_ms,
                                          int64_t arrival_time_ms,
-                                         size_t packet_size) {
+                                         size_t packet_size) {    
+  RTC_LOG(LS_INFO) << "recv_delta_ms  send_delta_ms " << recv_delta_ms << " " << send_delta_ms;                                   
   const double delta_ms = recv_delta_ms - send_delta_ms;
   ++num_of_deltas_;
   num_of_deltas_ = std::min(num_of_deltas_, kDeltaCounterMax);
@@ -221,6 +223,7 @@ void TrendlineEstimator::UpdateTrendline(double recv_delta_ms,
   delay_hist_.emplace_back(
       static_cast<double>(arrival_time_ms - first_arrival_time_ms_),
       smoothed_delay_, accumulated_delay_);
+  RTC_LOG(LS_INFO) << "smoothed_delay_ " << smoothed_delay_ << " arrival " << static_cast<double>(arrival_time_ms - first_arrival_time_ms_);
   if (settings_.enable_sort) {
     for (size_t i = delay_hist_.size() - 1;
          i > 0 &&
@@ -229,17 +232,36 @@ void TrendlineEstimator::UpdateTrendline(double recv_delta_ms,
       std::swap(delay_hist_[i], delay_hist_[i - 1]);
     }
   }
-  if (delay_hist_.size() > settings_.window_size)
+  RTC_LOG(LS_INFO) << "Window size " << settings_.window_size;
+  double first_arrival_time = delay_hist_.front().arrival_time_ms;
+  double last_arrival_time = delay_hist_.back().arrival_time_ms;
+  double duration = last_arrival_time - first_arrival_time;
+  // if (delay_hist_.size() > settings_.window_size)
+  //   delay_hist_.pop_front();
+  int MaxDuration = 500;
+  bool dofit = false;
+  while (duration > MaxDuration && delay_hist_.size() > 2){
+    dofit = true;
     delay_hist_.pop_front();
-
+    first_arrival_time = delay_hist_.front().arrival_time_ms;
+    last_arrival_time = delay_hist_.back().arrival_time_ms;
+    duration = last_arrival_time - first_arrival_time;
+  }
   // Simple linear regression.
   double trend = prev_trend_;
-  if (delay_hist_.size() == settings_.window_size) {
+  if (dofit) {
     // Update trend_ if it is possible to fit a line to the data. The delay
     // trend can be seen as an estimate of (send_rate - capacity)/capacity.
     // 0 < trend < 1   ->  the delay increases, queues are filling up
     //   trend == 0    ->  the delay does not change
     //   trend < 0     ->  the delay decreases, queues are being emptied
+    RTC_LOG(LS_INFO) << "****";
+    for (const auto& packet : delay_hist_) {
+    double x = packet.arrival_time_ms;
+    double y = packet.smoothed_delay_ms;
+    RTC_LOG(LS_INFO) << "smoothed_delay_ " << y << " arrival " << x;
+  }
+  RTC_LOG(LS_INFO) << "****";
     trend = LinearFitSlope(delay_hist_).value_or(trend);
     if (settings_.enable_cap) {
       absl::optional<double> cap = ComputeSlopeCap(delay_hist_, settings_);
@@ -334,6 +356,9 @@ void TrendlineEstimator::UpdateThreshold(double modified_trend,
   threshold_ += k * (fabs(modified_trend) - threshold_) * time_delta_ms;
   threshold_ = rtc::SafeClamp(threshold_, 6.f, 600.f);
   last_update_ms_ = now_ms;
+
+  RTC_LOG(LS_VERBOSE) << "TrendlineEstimator: modified_trend=" << modified_trend
+                      << " threshold_=" << threshold_;
 }
 
 }  // namespace webrtc

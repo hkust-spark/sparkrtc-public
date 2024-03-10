@@ -20,7 +20,7 @@
 #include "rtc_base/experiments/field_trial_parser.h"
 #include "rtc_base/experiments/field_trial_units.h"
 #include "rtc_base/trace_event.h"
-
+#include "rtc_base/logging.h"
 namespace webrtc {
 
 namespace {
@@ -110,7 +110,6 @@ void TaskQueuePacedSender::SetPacingRates(DataRate pacing_rate,
   pacing_controller_.SetPacingRates(pacing_rate, padding_rate);
   MaybeScheduleProcessPackets();
 }
-
 void TaskQueuePacedSender::EnqueuePackets(
     std::vector<std::unique_ptr<RtpPacketToSend>> packets) {
   task_queue_->PostTask(

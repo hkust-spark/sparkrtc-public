@@ -151,9 +151,15 @@ int main(int argc, char* argv[]) {
   rtc::LogMessage::LogTimestamps(true);
   rtc::LogMessage::LogThreads(true);
 
-  rtc::FileRotatingLogSink frls("./logs", logname + std::to_string(::time(NULL)), 10 << 20, 10);
+  if (logname == "NONE") {
+    logname = "log_" + std::to_string(::time(NULL));
+  }
+
+  rtc::FileRotatingLogSink frls("./logs", logname, 10 << 20, 10);
   frls.Init();
   rtc::LogMessage::AddLogToStream(&frls, rtc::LS_VERBOSE);
+  
+  
 
   bool autocall = false;
   if (local_video_filename != "NONE") {

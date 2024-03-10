@@ -892,6 +892,7 @@ void ChannelReceive::SetNonSenderRttMeasurement(bool enabled) {
 // Called when we are missing one or more packets.
 int ChannelReceive::ResendPackets(const uint16_t* sequence_numbers,
                                   int length) {
+  RTC_LOG(LS_INFO) << "Resending " << length << " packets.";
   return rtp_rtcp_->SendNACK(sequence_numbers, length);
 }
 

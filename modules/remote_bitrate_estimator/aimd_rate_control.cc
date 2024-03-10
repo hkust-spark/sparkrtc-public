@@ -237,7 +237,8 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
     return;
 
   ChangeState(input, at_time);
-
+  RTC_LOG(LS_INFO) << "State " << rate_control_state_;
+  RTC_LOG(LS_INFO) << "BW State " << input.bw_state;
   switch (rate_control_state_) {
     case RateControlState::kRcHold:
       break;
@@ -251,6 +252,9 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
       // easily get stuck if the encoder produces uneven outputs.
       DataRate increase_limit =
           1.5 * estimated_throughput + DataRate::KilobitsPerSec(10);
+
+      
+
       if (send_side_ && in_alr_ && no_bitrate_increase_in_alr_) {
         // Do not increase the delay based estimate in alr since the estimator
         // will not be able to get transport feedback necessary to detect if
@@ -259,7 +263,7 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
         // probing), we don't allow further changes.
         increase_limit = current_bitrate_;
       }
-
+      RTC_LOG(LS_INFO) << "Increase limit " << increase_limit;
       if (current_bitrate_ < increase_limit) {
         DataRate increased_bitrate = DataRate::MinusInfinity();
         if (link_capacity_.has_estimate()) {
@@ -270,12 +274,15 @@ void AimdRateControl::ChangeBitrate(const RateControlInput& input,
           DataRate additive_increase =
               AdditiveRateIncrease(at_time, time_last_bitrate_change_);
           increased_bitrate = current_bitrate_ + additive_increase;
+          //RTCLOG << "Additive increase " << additive_increase;
+          RTC_LOG(LS_INFO) << "Additive increase " << additive_increase;
         } else {
           // If we don't have an estimate of the link capacity, use faster ramp
           // up to discover the capacity.
           DataRate multiplicative_increase = MultiplicativeRateIncrease(
               at_time, time_last_bitrate_change_, current_bitrate_);
           increased_bitrate = current_bitrate_ + multiplicative_increase;
+          RTC_LOG(LS_INFO) << "Multiplicative increase " << multiplicative_increase;
         }
         new_bitrate = std::min(increased_bitrate, increase_limit);
       }

@@ -241,6 +241,8 @@ std::vector<std::unique_ptr<RtpPacketToSend>> PacketRouter::GeneratePadding(
   }
 
   for (auto& packet : padding_packets) {
+    RTC_LOG(LS_INFO) << "Sending padding packet, sequence number "
+                     << packet->SequenceNumber();
     RTC_UNUSED(packet);
     TRACE_EVENT2(TRACE_DISABLED_BY_DEFAULT("webrtc"),
                  "PacketRouter::GeneratePadding::Loop", "sequence_number",

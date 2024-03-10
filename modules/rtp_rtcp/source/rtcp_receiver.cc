@@ -740,6 +740,7 @@ bool RTCPReceiver::HandleNack(const CommonHeader& rtcp_block,
     packet_type_counter_.unique_nack_requests = nack_stats_.unique_requests();
   }
 
+  RTC_LOG(LS_VERBOSE) << "Nacklist size " << nack.packet_ids().size();
   return true;
 }
 
