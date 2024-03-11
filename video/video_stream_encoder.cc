@@ -59,7 +59,7 @@
 
 #include <openssl/md5.h>
 
-#define AV1_ENCODING 1
+#define AV1_ENCODING 0
 namespace webrtc {
 
 namespace {
