@@ -125,6 +125,7 @@ void AddDefaultFeedbackParams(VideoCodec* codec,
   codec->AddFeedbackParam(FeedbackParam(kRtcpFbParamCcm, kRtcpFbCcmParamFir));
   codec->AddFeedbackParam(FeedbackParam(kRtcpFbParamNack, kParamValueEmpty));
   codec->AddFeedbackParam(FeedbackParam(kRtcpFbParamNack, kRtcpFbNackParamPli));
+  // codec->AddFeedbackParam(FeedbackParam(kRtcpFbParamRrtr, kParamValueEmpty));
   if (codec->name == kVp8CodecName &&
       IsEnabled(trials, "WebRTC-RtcpLossNotification")) {
     codec->AddFeedbackParam(FeedbackParam(kRtcpFbParamLntf, kParamValueEmpty));
