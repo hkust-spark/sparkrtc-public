@@ -24,7 +24,7 @@ namespace webrtc {
 namespace {
 constexpr int kMaxPacketAge = 10'000;
 constexpr int kMaxNackPackets = 1000;
-constexpr TimeDelta kDefaultRtt = TimeDelta::Millis(100);
+constexpr TimeDelta kDefaultRtt = TimeDelta::Millis(20);
 constexpr int kMaxNackRetries = 10;
 constexpr int kMaxReorderedPackets = 128;
 constexpr int kNumReorderingBuckets = 10;
@@ -299,6 +299,7 @@ std::vector<uint16_t> NackRequester::GetNackBatch(NackFilterOptions options) {
   Timestamp now = clock_->CurrentTime();
   std::vector<uint16_t> nack_batch;
   auto it = nack_list_.begin();
+  RTC_LOG(LS_INFO) << "NackRequester::GetNackBatch: rtt_ = " << rtt_;
   while (it != nack_list_.end()) {
     bool delay_timed_out = now - it->second.created_at_time >= send_nack_delay_;
     bool nack_on_rtt_passed = now - it->second.sent_at_time >= rtt_;
