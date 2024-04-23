@@ -468,7 +468,7 @@ rtc_library("webrtc_h264") {
   ]
 
   
-  libs = ["/usr/lib/x86_64-linux-gnu/libx264.a"]
+  libs = ["/home/xiangjie/x264/libx264.a"]
 
 
   defines = []

@@ -234,6 +234,8 @@ class PacingController {
   bool probing_send_failure_;
 
   Timestamp last_process_time_;
+
+  Timestamp last_process_time2_;
   Timestamp last_send_time_;
   absl::optional<Timestamp> first_sent_packet_time_;
   bool seen_first_packet_;

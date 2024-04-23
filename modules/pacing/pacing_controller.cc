@@ -23,7 +23,7 @@
 #include "rtc_base/logging.h"
 #include "rtc_base/time_utils.h"
 #include "system_wrappers/include/clock.h"
-
+#define ACTION 0
 namespace webrtc {
 namespace {
 constexpr TimeDelta kCongestedPacketInterval = TimeDelta::Millis(500);
@@ -52,6 +52,7 @@ const TimeDelta PacingController::kMaxPaddingReplayDuration =
     TimeDelta::Millis(50);
 const TimeDelta PacingController::kMaxEarlyProbeProcessing =
     TimeDelta::Millis(1);
+
 
 PacingController::PacingController(Clock* clock,
                                    PacketSender* packet_sender,
@@ -82,6 +83,7 @@ PacingController::PacingController(Clock* clock,
       prober_(field_trials_),
       probing_send_failure_(false),
       last_process_time_(clock->CurrentTime()),
+      last_process_time2_(clock->CurrentTime()),
       last_send_time_(last_process_time_),
       seen_first_packet_(false),
       packet_queue_(/*creation_time=*/last_process_time_),
@@ -95,7 +97,11 @@ PacingController::PacingController(Clock* clock,
                            "pushback experiment must be enabled.";
   }
 }
-
+#if ACTION
+int token_bucket_size = 0; // Bytes
+int current_available_token = 0;
+int token_bucket_rate = 3000; // 3kbps
+#endif
 PacingController::~PacingController() = default;
 
 void PacingController::CreateProbeClusters(
@@ -180,13 +186,59 @@ void PacingController::SetPacingRates(DataRate pacing_rate,
   }
   pacing_rate_ = pacing_rate;
   padding_rate_ = padding_rate;
+#if ACTION
+  token_bucket_rate = pacing_rate.kbps();
+  token_bucket_size = pacing_rate.kbps() / 30 / 8 * 1000; // Byte
+#endif
   MaybeUpdateMediaRateDueToLongQueue(CurrentTime());
-
+  RTC_LOG(LS_VERBOSE) << "bwe:pacer_updated pacing_kbps=" << pacing_rate.kbps()
+                      << " padding_budget_kbps=" << padding_rate.kbps();
   RTC_LOG(LS_VERBOSE) << "bwe:pacer_updated pacing_kbps=" << pacing_rate_.kbps()
                       << " padding_budget_kbps=" << padding_rate.kbps();
 }
 
+
+
+
 void PacingController::EnqueuePacket(std::unique_ptr<RtpPacketToSend> packet) {
+#if ACTION
+  Timestamp current_ts = CurrentTime();
+
+  TimeDelta elapsed_time = current_ts - last_process_time2_;
+
+  last_process_time2_ = current_ts;
+
+  RTC_LOG(LS_INFO) << "PacingController::EnqueuePacket: elapsed_time = " << elapsed_time.ms();
+
+  // add tokens to the bucket
+  int token_to_add = elapsed_time.ms() * token_bucket_rate / 1000 / 8; // Byte
+  current_available_token += token_to_add;
+
+  // upper bound
+  if (current_available_token > token_bucket_size) {
+    current_available_token = token_bucket_size;
+  }
+
+  RTC_LOG(LS_INFO) << "PacingController::EnqueuePacket: current_available_token = " << current_available_token;
+
+  int packet_size = packet->payload_size() + packet->padding_size();
+  int token_needed = packet_size;
+  RTC_LOG(LS_INFO) << "PacingController::EnqueuePacket: token_needed = " << token_needed;
+  if (current_available_token < token_needed) {
+    // pace the packet out
+    RTC_LOG(LS_INFO) << "PacingController::EnqueuePacket: current_available_token < token_needed";
+    // TODO  : consune token
+    pacing_rate_ = DataRate::KilobitsPerSec(token_bucket_rate);
+
+    RTC_LOG(LS_INFO) << "PacingController::EnqueuePacket: pacing_rate_ = " << pacing_rate_.kbps();
+  }
+  else{
+      current_available_token -= token_needed;
+      RTC_LOG(LS_INFO) << "PacingController::EnqueuePacket: current_available_token = " << token_bucket_size;
+      pacing_rate_ = DataRate::KilobitsPerSec(100000000);
+  }
+#endif
+
   RTC_DCHECK(pacing_rate_ > DataRate::Zero())
       << "SetPacingRate must be called before InsertPacket.";
   RTC_CHECK(packet->packet_type());

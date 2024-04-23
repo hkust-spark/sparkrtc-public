@@ -223,7 +223,7 @@ void TrendlineEstimator::UpdateTrendline(double recv_delta_ms,
   delay_hist_.emplace_back(
       static_cast<double>(arrival_time_ms - first_arrival_time_ms_),
       smoothed_delay_, accumulated_delay_);
-  RTC_LOG(LS_INFO) << "smoothed_delay_ " << smoothed_delay_ << " arrival " << static_cast<double>(arrival_time_ms - first_arrival_time_ms_);
+  // RTC_LOG(LS_INFO) << "smoothed_delay_ " << smoothed_delay_ << " arrival " << static_cast<double>(arrival_time_ms - first_arrival_time_ms_);
   if (settings_.enable_sort) {
     for (size_t i = delay_hist_.size() - 1;
          i > 0 &&
@@ -255,13 +255,13 @@ void TrendlineEstimator::UpdateTrendline(double recv_delta_ms,
     // 0 < trend < 1   ->  the delay increases, queues are filling up
     //   trend == 0    ->  the delay does not change
     //   trend < 0     ->  the delay decreases, queues are being emptied
-    RTC_LOG(LS_INFO) << "****";
-    for (const auto& packet : delay_hist_) {
-    double x = packet.arrival_time_ms;
-    double y = packet.smoothed_delay_ms;
-    RTC_LOG(LS_INFO) << "smoothed_delay_ " << y << " arrival " << x;
-  }
-  RTC_LOG(LS_INFO) << "****";
+    // RTC_LOG(LS_INFO) << "****";
+    // for (const auto& packet : delay_hist_) {
+    // double x = packet.arrival_time_ms;
+    // double y = packet.smoothed_delay_ms;
+    // RTC_LOG(LS_INFO) << "smoothed_delay_ " << y << " arrival " << x;
+  // }
+  // RTC_LOG(LS_INFO) << "****";
     trend = LinearFitSlope(delay_hist_).value_or(trend);
     if (settings_.enable_cap) {
       absl::optional<double> cap = ComputeSlopeCap(delay_hist_, settings_);
