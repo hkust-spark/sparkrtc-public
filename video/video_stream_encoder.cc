@@ -7,7 +7,7 @@
  *  in the file PATENTS.  All contributing project authors may
  *  be found in the AUTHORS file in the root of the source tree.
  */
-
+#define FACTOR 1.0f
 #include "video/video_stream_encoder.h"
 
 #include <algorithm>
@@ -1371,6 +1371,7 @@ void VideoStreamEncoder::ReconfigureEncoder() {
   force_disable_frame_dropper_ =
       field_trials_.IsDisabled(kFrameDropperFieldTrial) ||
       (num_layers > 1 && codec.mode == VideoCodecMode::kScreensharing);
+  force_disable_frame_dropper_ = true;
 
   const VideoEncoder::EncoderInfo info = encoder_->GetEncoderInfo();
   if (rate_control_settings_.UseEncoderBitrateAdjuster()) {
@@ -1505,6 +1506,16 @@ void VideoStreamEncoder::OnEncoderSettingsChanged() {
 void VideoStreamEncoder::OnFrame(Timestamp post_time,
                                  int frames_scheduled_for_processing,
                                  const VideoFrame& video_frame) {
+  RTC_LOG(LS_VERBOSE) << "OnFrame at " << post_time.ms()
+                      << ", ts: " << video_frame.timestamp()
+                      << ", ntp_time_ms: " << video_frame.ntp_time_ms()
+                      << ", timestamp_us: " << video_frame.timestamp_us()
+                      << ", render_time_ms: " << video_frame.render_time_ms()
+                      << ", rotation: " << video_frame.rotation()
+                      << ", width: " << video_frame.width()
+                      << ", height: " << video_frame.height()
+                      << ", pixel_count: " << video_frame.width()
+                      << "x" << video_frame.height();
   RTC_DCHECK_RUN_ON(&encoder_queue_);
   VideoFrame incoming_frame = video_frame;
 
@@ -1562,9 +1573,14 @@ void VideoStreamEncoder::OnFrame(Timestamp post_time,
                                            incoming_frame.height());
   ++captured_frame_count_;
   CheckForAnimatedContent(incoming_frame, post_time.us());
+
+  // int cwd_frame_drop_interval = cwnd_frame_drop_interval_.value();
+  RTC_LOG(LS_VERBOSE) << "cwnd_frame_counter_ " << cwnd_frame_counter_;
+  // RTC_LOG(LS_VERBOSE) << "cwnd_frame_counter_ " << cwnd_frame_counter_;
+
   bool cwnd_frame_drop =
       cwnd_frame_drop_interval_ &&
-      (cwnd_frame_counter_++ % cwnd_frame_drop_interval_.value() == 0);
+      (cwnd_frame_counter_++ % cwnd_frame_drop_interval_.value() == 0); 
   if (frames_scheduled_for_processing == 1 && !cwnd_frame_drop) {
     MaybeEncodeVideoFrame(incoming_frame, post_time.us());
   } else {
@@ -1755,6 +1771,8 @@ void VideoStreamEncoder::SetEncoderRates(
 
 void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
                                                int64_t time_when_posted_us) {
+   RTC_LOG(LS_VERBOSE) << __func__ << " posted " << time_when_posted_us
+                      << " ntp time " << video_frame.ntp_time_ms();
   RTC_DCHECK_RUN_ON(&encoder_queue_);
   input_state_provider_.OnFrameSizeObserved(video_frame.size());
 
@@ -1870,9 +1888,10 @@ void VideoStreamEncoder::MaybeEncodeVideoFrame(const VideoFrame& video_frame,
   frame_dropper_.Leak(framerate_fps);
   // Frame dropping is enabled iff frame dropping is not force-disabled, and
   // rate controller is not trusted.
-  const bool frame_dropping_enabled =
-      !force_disable_frame_dropper_ &&
-      !encoder_info_.has_trusted_rate_controller;
+  const bool frame_dropping_enabled = false;
+      // !force_disable_frame_dropper_ &&
+      // !encoder_info_.has_trusted_rate_controller;
+
   frame_dropper_.Enable(frame_dropping_enabled);
   if (frame_dropping_enabled && frame_dropper_.DropFrame()) {
     RTC_LOG(LS_VERBOSE)
@@ -2292,21 +2311,21 @@ DataRate VideoStreamEncoder::UpdateTargetBitrate(DataRate target_bitrate,
   // Drop frames when congestion window pushback ratio is larger than 1
   // percent and target bitrate is larger than codec min bitrate.
   // When target_bitrate is 0 means codec is paused, skip frame dropping.
-  if (cwnd_reduce_ratio > 0.01 && target_bitrate.bps() > 0 &&
-      target_bitrate.bps() > send_codec_.minBitrate * 1000) {
-    int reduce_bitrate_bps = std::min(
-        static_cast<int>(target_bitrate.bps() * cwnd_reduce_ratio),
-        static_cast<int>(target_bitrate.bps() - send_codec_.minBitrate * 1000));
-    if (reduce_bitrate_bps > 0) {
-      // At maximum the congestion window can drop 1/2 frames.
-      cwnd_frame_drop_interval_ = std::max(
-          2, static_cast<int>(target_bitrate.bps() / reduce_bitrate_bps));
-      // Reduce target bitrate accordingly.
-      updated_target_bitrate =
-          target_bitrate - (target_bitrate / cwnd_frame_drop_interval_.value());
-      return updated_target_bitrate;
-    }
-  }
+  // if (cwnd_reduce_ratio > 0.01 && target_bitrate.bps() > 0 &&
+  //     target_bitrate.bps() > send_codec_.minBitrate * 1000) {
+  //   int reduce_bitrate_bps = std::min(
+  //       static_cast<int>(target_bitrate.bps() * cwnd_reduce_ratio),
+  //       static_cast<int>(target_bitrate.bps() - send_codec_.minBitrate * 1000));
+  //   if (reduce_bitrate_bps > 0) {
+  //     // At maximum the congestion window can drop 1/2 frames.
+  //     cwnd_frame_drop_interval_ = std::max(
+  //         2, static_cast<int>(target_bitrate.bps() / reduce_bitrate_bps));
+  //     // Reduce target bitrate accordingly.
+  //     updated_target_bitrate =
+  //         target_bitrate - (target_bitrate / cwnd_frame_drop_interval_.value());
+  //     return updated_target_bitrate;
+  //   }
+  // }
   cwnd_frame_drop_interval_.reset();
   return updated_target_bitrate;
 }
@@ -2317,6 +2336,8 @@ void VideoStreamEncoder::OnBitrateUpdated(DataRate target_bitrate,
                                           uint8_t fraction_lost,
                                           int64_t round_trip_time_ms,
                                           double cwnd_reduce_ratio) {
+  link_allocation = link_allocation * FACTOR;
+  target_bitrate = target_bitrate * FACTOR;
   RTC_DCHECK_GE(link_allocation, target_bitrate);
   if (!encoder_queue_.IsCurrent()) {
     encoder_queue_.PostTask([this, target_bitrate, stable_target_bitrate,
