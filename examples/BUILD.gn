@@ -62,6 +62,12 @@ group("examples") {
     }
   }
 
+  if (is_mac) {
+    deps += [
+      ":peerconnection_localvideo",
+      ":peerconnection_server",
+    ]
+  }
   if (is_android || is_win) {
     deps += [ ":webrtc_unity_plugin" ]
   }
@@ -662,6 +668,125 @@ if (is_ios || (is_mac && target_cpu != "x86")) {
   }
 }
 
+# Add macOS localvideo and server example.
+if (is_mac) {
+
+  rtc_executable("peerconnection_server") {
+    testonly = true
+    sources = [
+      "peerconnection/server/data_socket.cc",
+      "peerconnection/server/data_socket.h",
+      "peerconnection/server/main.cc",
+      "peerconnection/server/peer_channel.cc",
+      "peerconnection/server/peer_channel.h",
+      "peerconnection/server/utils.cc",
+      "peerconnection/server/utils.h",
+    ]
+    deps = [
+      "../rtc_base:checks",
+      "../rtc_base:stringutils",
+      "../system_wrappers:field_trial",
+      "../test:field_trial",
+      "//third_party/abseil-cpp/absl/flags:flag",
+      "//third_party/abseil-cpp/absl/flags:parse",
+      "//third_party/abseil-cpp/absl/flags:usage",
+    ]
+  }
+
+  rtc_executable("peerconnection_localvideo") {
+    testonly = true
+    sources = [
+      "peerconnection/localvideo/conductor.cc",
+      "peerconnection/localvideo/conductor.h",
+      "peerconnection/localvideo/defaults.cc",
+      "peerconnection/localvideo/defaults.h",
+      "peerconnection/localvideo/peer_connection_localvideo.cc",
+      "peerconnection/localvideo/peer_connection_localvideo.h",
+      "peerconnection/localvideo/test_desktop_capturer.cc",
+      "peerconnection/localvideo/test_desktop_capturer.h",
+      "peerconnection/localvideo/wrapped_desktop_capturer.cc",
+      "peerconnection/localvideo/wrapped_desktop_capturer.h",
+
+    ]
+
+    deps = [
+      "../api:audio_options_api",
+      "../api:create_peerconnection_factory",
+      "../api:libjingle_peerconnection_api",
+      "../api:media_stream_interface",
+      "../api:rtp_sender_interface",
+      "../api:scoped_refptr",
+      "../api/audio:audio_mixer_api",
+      "../api/audio_codecs:audio_codecs_api",
+      "../api/task_queue:pending_task_safety_flag",
+      "../api/units:time_delta",
+      "../api/video:video_frame",
+      "../api/video:video_rtp_headers",
+      "../api/video_codecs:video_codecs_api",
+      "../media:media_channel",
+      "../media:rtc_media_base",
+      "../p2p:rtc_p2p",
+      "../pc:video_track_source",
+      "../rtc_base:checks",
+      "../rtc_base:logging",
+      "../rtc_base:log_sinks",
+      "../rtc_base:macromagic",
+      "../rtc_base:net_helpers",
+      "../rtc_base:refcount",
+      "../rtc_base:rtc_certificate_generator",
+      "../rtc_base:ssl",
+      "../rtc_base:stringutils",
+      "../rtc_base:threading",
+      "../rtc_base/third_party/sigslot",
+      "../system_wrappers:field_trial",
+      "../test:field_trial",
+      "../test:platform_video_capturer",
+      "../test:rtp_test_utils",
+      "//third_party/abseil-cpp/absl/memory",
+      "//third_party/abseil-cpp/absl/types:optional",
+      "//rtc_tools",
+    ]
+    if (is_mac) {
+      sources += [
+        "peerconnection/localvideo/main_mac.cc",
+        "peerconnection/localvideo/linux/fake_wnd.cc",
+        "peerconnection/localvideo/linux/fake_wnd.h",
+      ]
+      cflags = [ "-Wno-deprecated-declarations" ]
+    }
+
+    deps += [
+      "../api:libjingle_peerconnection_api",
+      "../api/audio_codecs:builtin_audio_decoder_factory",
+      "../api/audio_codecs:builtin_audio_encoder_factory",
+      "../api/video:video_frame",
+      "../api/video:video_rtp_headers",
+      "../api/video_codecs:video_decoder_factory_template",
+      "../api/video_codecs:video_decoder_factory_template_dav1d_adapter",
+      "../api/video_codecs:video_decoder_factory_template_libvpx_vp8_adapter",
+      "../api/video_codecs:video_decoder_factory_template_libvpx_vp9_adapter",
+      "../api/video_codecs:video_decoder_factory_template_open_h264_adapter",
+      "../api/video_codecs:video_encoder_factory_template",
+      "../api/video_codecs:video_encoder_factory_template_libaom_av1_adapter",
+      "../api/video_codecs:video_encoder_factory_template_libvpx_vp8_adapter",
+      "../api/video_codecs:video_encoder_factory_template_libvpx_vp9_adapter",
+      "../api/video_codecs:video_encoder_factory_template_open_h264_adapter",
+      "../media:rtc_audio_video",
+      "../modules/audio_device",
+      "../modules/audio_processing",
+      "../modules/audio_processing:api",
+      "../modules/video_capture:video_capture_module",
+      "../modules/desktop_capture:desktop_capture",
+      "../pc:libjingle_peerconnection",
+      "../rtc_base:rtc_json",
+      "../test:video_test_common",
+      "//third_party/abseil-cpp/absl/flags:flag",
+      "//third_party/abseil-cpp/absl/flags:parse",
+      "//third_party/libyuv",
+    ]
+  }
+
+}
 if (is_linux || is_chromeos || is_win) {
   if (is_linux || is_chromeos) {
     pkg_config("gtk_config") {
