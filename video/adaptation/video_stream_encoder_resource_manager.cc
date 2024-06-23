@@ -682,6 +682,7 @@ CpuOveruseOptions VideoStreamEncoderResourceManager::GetCpuOveruseOptions()
   if (experiment_cpu_load_estimator_) {
     options.filter_time_ms = 5 * rtc::kNumMillisecsPerSec;
   }
+  options.high_encode_usage_threshold_percent = 1000;
   return options;
 }
 
