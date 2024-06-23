@@ -297,11 +297,16 @@ int32_t H264EncoderImpl::InitEncode(const VideoCodec* inst,
     return WEBRTC_VIDEO_CODEC_ERROR;
   }
 
+  int bitrate_kbps = 28000;
+
   param_.i_threads = 1;
   param_.i_width = inst->width;
   param_.i_height = inst->height;
   param_.i_frame_total = 0;  
   param_.i_keyint_max = 1500;
+  param_.rc.i_rc_method = X264_RC_ABR;
+  param_.rc.i_vbv_max_bitrate = bitrate_kbps;
+  param_.rc.i_vbv_buffer_size = bitrate_kbps;
   // param_.i_bframe = 0;
   // param_.b_open_gop = 0;
   // param_.i_bframe_pyramid = 0;
@@ -316,7 +321,7 @@ int32_t H264EncoderImpl::InitEncode(const VideoCodec* inst,
 
   param_.b_vfr_input = 0;
   param_.b_repeat_headers = 1;  // sps, pps
-  param_.rc.i_bitrate = codec_settings_.startBitrate;
+  param_.rc.i_bitrate = bitrate_kbps;
   /* Apply profile restrictions. */
   ret_val = x264_param_apply_profile(&param_, "baseline");
   if (ret_val != 0) {
@@ -494,8 +499,12 @@ void H264EncoderImpl::SetRates(const RateControlParameters& parameters) {
     configurations_[i].max_frame_rate = parameters.framerate_fps;
 
     if (configurations_[i].target_bps) {
+      int bitrate_kbps = configurations_[i].target_bps / 1000;
+      RTC_LOG(LS_INFO) << "SetRates, stream " << i << " target_bitrate "
+                       << bitrate_kbps << " framerate "
+                       << parameters.framerate_fps;
       configurations_[i].SetStreamState(true);
-      param_.rc.i_bitrate = configurations_[i].target_bps;
+      param_.rc.i_bitrate = bitrate_kbps;
       param_.i_fps_num = static_cast<int>(parameters.framerate_fps);
       x264_encoder_reconfig(encoder_, &param_);
       // Update h264 encoder.
