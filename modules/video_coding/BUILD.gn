@@ -464,7 +464,12 @@ rtc_library("webrtc_h264") {
     "codecs/h264/h264_encoder_impl.cc",
     "codecs/h264/h264_encoder_impl.h",
     "codecs/h264/include/h264.h",
+    "codecs/h264/include/x264.h",
   ]
+
+  
+  libs = ["/usr/lib/x86_64-linux-gnu/libx264.a"]
+
 
   defines = []
   deps = [
