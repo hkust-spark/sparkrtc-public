@@ -2,6 +2,7 @@
 
 SparkRTC is built on WebRTC.
 The major difference is the goal -- SparkRTC is designed for ultra low latency, with coordinations across a series of modules in WebRTC.
+SparkRTC follows the license of WebRTC, and is open-source, free to use, and only for research purpose.
 
 **WebRTC is a free, open software project** that provides browsers and mobile
 applications with Real-Time Communications (RTC) capabilities via simple APIs.
@@ -24,18 +25,25 @@ First, be sure to install the [prerequisite software](https://webrtc.github.io/w
 For desktop development:
 
 Clone the current repo:
+
 ```
-git clone https://github.com/hkust-spark/sparkrtc.git
+git clone https://github.com/hkust-spark/sparkrtc-public.git
 ```
+
 Enter the root directory of the repo:
+
 ```
 cd ./sparkrtc
 ```
-Clone the submodules ([openh264](https://github.com/hkust-spark/openh264) and [ffmpeg](https://github.com/hkust-spark/openh264)), which are also modified by us:
+
+<!-- Clone the submodules ([openh264](https://github.com/hkust-spark/openh264) and [ffmpeg](https://github.com/hkust-spark/openh264)), which are also modified by us:
+
 ```
 git submodule update --init --recursive
-```
+``` -->
+
 Sync with other WebRTC-related repos using the `gclient` tool installed before.
+
 ```
 gclient sync
 ```
@@ -45,24 +53,30 @@ NOTICE: During your first sync, you’ll have to accept the license agreement of
 The checkout size is large due the use of the Chromium build toolchain and many dependencies. 
 
 ## Generating Ninja project files
+
 [Ninja](https://ninja-build.org/) is the default build system for all platforms.
 [Ninja](https://ninja-build.org/) project files are generated using [GN](https://gn.googlesource.com/gn/+/master/README.md). They're put in a directory of your choice, like `out/Debug`, but you can use any directory for keeping multiple configurations handy.
 
 To generate project files using the defaults (Debug build), run (in the root directory of the repo):
+
 ```
 gn gen out/Default
 ```
+
 See the [GN](https://gn.googlesource.com/gn/+/master/README.md) documentation for all available options. 
 
 ## Compiling
+
 When you have Ninja project files generated (see previous section), compile using:
 
 For Ninja project files generated in out/Default:
+
 ```
 ninja -C out/Default
 ```
 
 ## Example Applications
+
 WebRTC contains several example applications, which can be found under `src/webrtc/examples` and `src/talk/examples`. Higher level applications are listed first.
 
 Peerconnection consist of two applications using the WebRTC Native APIs:
@@ -75,6 +89,7 @@ The client application has simple voice and video capabilities. The server enabl
 
 **Setting up P2P calls between peerconnection_clients:** 
 Start peerconnection_server. You should see the following message indicating that it is running:
+
 ```
 Server listening on port 8888
 ```
@@ -114,6 +129,7 @@ We implemented a ``peerconnection_localvideo`` example modified from ``peerconne
 
 
 By default, the GUI is turned off. Add ```--gui``` on receiver to open the rendered view:
+
 ```
 ./peerconnection_localvideo --gui --recon "recon.yuv"
 ```
@@ -125,3 +141,303 @@ By default, the GUI is turned off. Add ```--gui``` on receiver to open the rende
 ./peerconnection_localvideo --file "input.yuv" --height 1080 --width 1920 --fps 24
 ```
 
+# Experimenting Testbed Setup Guide
+
+## Preparations
+
+All prerequisites of the SparkRTC are needed.
+
+Also,
+
+download and install our version of `mahimahi` <!--and `ffmpeg`. -->
+
+<!-- ```bash
+git clone https://github.com/hkust-spark/ffmpeg.git
+cd ffmpeg
+./configure
+make
+make install
+``` -->
+
+```bash
+git clone https://github.com/LW945/mahimahi.git
+cd mahimahi
+./configure
+make
+make install
+```
+
+Install cv2
+
+```bash
+pip install opencv-python 
+pip install opencv-contrib-python
+```
+
+### **Experiment Code**
+
+The experiment code is located in the `sparkrtc/my_experiment` directory.
+
+### Directory Structure
+
+After downloading the repo, create the following directories in `sparkrtc/my_experiment` manually:
+
+```bash
+mkdir -p data file send fig/(video_name)
+```
+
+Replace the `(video_name)` with the name of your video. 
+
+### **Sending Video**
+
+The video to be sent should be placed in the data directory. And the video should be in `.yuv` format.
+
+For example:
+
+`sparkrtc/my_experiment/data/video_0a86_qrcode.yuv`
+
+### **Picture Frames**
+
+The pictures in the `sparkrtc/my_experiment/send/(video_name)` directory are all frames from the send video.
+
+For example, add all frames of `video_0a86_qrcode.yuv` to
+
+`sparkrtc/my_experiment/send/video_0a86`
+
+### **Download WeChat QR Code Scanner Model**
+
+Some experiments include embedding QR codes into frames, and the WeChat QR Code Scanner Model is needed besides the cv2 library.
+
+Download the WeChat QR code scanner model file from GitHub:
+
+https://github.com/Tianxiaomo/qrdecoder/tree/master/model
+
+Put every `detect*, sr*` files in `sparkrtc/my_experiment/code/`.
+
+### **Path Configuration**
+
+You need to manually change the path of your installation of `ffmpeg` and `mahimahi` in `sparkrtc/my_experiment/code/process_video_qrcode.py`
+
+Also, you can setup the video`fps` here.
+
+```shell
+import os
+import qrcode
+import cv2
+import argparse
+import matplotlib.pyplot as plt
+import numpy as np
+import subprocess
+import signal
+import time
+from concurrent.futures import ThreadPoolExecutor
+ffmpeg_path = "your/path/to/ffmpeg"
+mahimahi_path = "your/path/to/mahimahi"
+fps = 30
+```
+
+### **Loss Configuration**
+
+You need to manually change the experiment loss configuration of mahimahi via a config file. 
+
+Create a file named loss_trace in `sparkrtc/my_experiment/file`
+
+Config the file with the formate of 
+
+```
+timestamp(in mm), loss rate
+timestamp(in mm), loss rate 
+```
+
+For example:
+
+```
+3470,0
+3500,0.1
+```
+
+## Usage
+
+The script can be run with different options to perform various tasks. The options are:
+
+1. gen_send_video: Generate video with QR codes.
+2. decode_recv_video: Decode received video and calculate metrics.
+3. show_fig: Generate figures from experiment results.
+4. send_and_recv: Send video and receive it, then process the results.
+
+#### **Generating Video with QR Codes**
+
+To generate a video with QR codes embedded in the frames:
+
+```bash
+python3 script.py --option=gen_send_video --data=<video_name>
+```
+
+#### **Decoding Received Video**
+
+To decode the received video and calculate SSIM and delay:
+
+```bash
+python3 script.py --option=decode_recv_video --data=<video_name>
+```
+
+#### **Generating Figures**
+
+To generate figures based on the experiment results:
+
+```bash
+python3 script.py --option=show_fig --data=<video_name>
+```
+
+#### **Sending and Receiving Video**
+
+To send a video and receive it, then process the received video:
+
+```bash
+python script.py --option=send_and_recv --data=<video_name> --loss_rate=<loss_rate> --method_val=<method_val> --method_type=<method_type> --burst_length=<burst_length>
+```
+
+## One-tap Experiments
+
+Using `sparkrtc/my_experiment/code/run.sh` can run several experiments at once to make the process easier.
+
+**Usage**
+
+```bash
+./run.sh
+```
+
+**Parameters**
+
+The script uses the following parameters:
+
+•	burst_length=2: The length of the burst for the experiment.
+
+•	lr=10: The loss rate for the experiment.
+
+•	method_type: This varies between 1 and 2, representing different experiment methods, 2 is our approach, and 1 is the baseline.
+
+•	method_val: This varies depending on the method_type.
+
+•	In the example, for method_type=2, method_val ranges from 40 to 130 in step 10 (these can all be modified).
+
+•	In the example, for method_type=1, method_val ranges from 1 to 3 (These can all be modified).
+
+•	data=video_0a86: The dataset used for the experiment.
+
+## Output Results
+
+**General Output Structure**
+
+The output results from the experiments are generally stored in the following directory structure:
+
+```bash
+project_root/
+├── data/
+│   ├── <video_name>/
+│   │   ├── <video_name>.yuv
+│   │   ├── <video_name>_qrcode.yuv
+│   │   └── frame<frame_number>.png
+├── qrcode/
+│   ├── <video_name>/
+│   │   ├── qrcode_<number>.png
+│   │   └── qrcode_output.yuv
+├── rec/
+│   ├── <video_name>/
+│   │   ├── recon.yuv
+│   │   ├── recv.log
+│   │   ├── send.log
+│   │   ├── raw_frames/
+│   │   │   └── frame<frame_number>.png
+│   │   └── res_frames/
+│   │       └── frames<qrcode_number>.png
+├── res/
+│   ├── <video_name>/
+│   │   ├── ssim/
+│   │   │   ├── delay.log
+│   │   │   ├── ssim.log
+│   │   │   └── tmp/
+│   │   │       └── <frame_number>.log
+│   │   └── x264/
+│   │       ├── naive/
+│   │       │   └── <loss_rate>_<method_val>.log
+│   │       └── deadline_aware/
+│   │           └── <loss_rate>_<method_val>.log
+├── fig/
+│   ├── <video_name>/
+│   │   ├── experiment_dot_plot.png
+│   │   └── experiment_error_plot.png
+└── file/
+    ├── loss_trace
+    └── warning.log
+```
+
+#### **Output Formats**
+
+**Logs and Metrics**
+
+ 1. **SSIM Log** (`ssim.log`):
+
+    •	Directory: `res/<video_name>/ssim/`
+
+​	•	Format: frame_number, ssim_value
+
+​	•	Description: Contains SSIM values for each frame.
+
+2. **Delay Log (**`delay.log`):
+
+   •	Directory: `res/<video_name>/ssim/`
+
+​	•	Format: delay_value
+
+​	•	Description: Contains delay values for each frame.
+
+3. **Experiment Log **(`<loss_rate>_<method_val>.log`):
+
+   •	Directory: `res/<video_name>/x264/naive/`
+
+​	•	Format: ssim, delay, burst_frame_idx, frame_translation
+
+​	•	Description: Contains summarized results for each experiment configuration.
+
+**Plots**
+
+Directory: `fig/<video_name>/`
+
+1. **Dot Plot (**`experiment_dot_plot.png`):
+
+​	•	Description: Plot showing SSIM loss vs load time with annotations for different thresholds.
+
+2. **Error Plot** (`experiment_error_plot.png`):
+
+​	•	Description: Plot showing SSIM loss vs load time with error bars.
+
+## *Appendix: **Detailed Description***
+
+##### **QR Code Generation**
+
+`gen_qrcode(cfg, num)` generates QR codes and saves them as images. It then creates a YUV video from these images using ffmpeg.
+
+**Overlaying QR Codes on Video**
+
+`overlay_qrcode_to_video(cfg, num)` overlays the generated QR codes onto the video frames at specified positions.
+
+**Decoding QR Codes from Video**
+
+`scan_qrcode_fast(frame_list, qrcode_raw_dir, qrcode_res_dir)` and `scan_qrcode(num, qrcode_raw_dir, qrcode_res_dir)` decode QR codes from video frames and log the results.
+
+**Calculating SSIM**
+
+`cal_ssim_fast(frame_list, send_image_path, ssim_res_path, qrcode_res_path)` and `cal_ssim(num, send_image_path, ssim_res_path, qrcode_res_path)` calculate the SSIM between sent and received video frames.
+
+**Calculating Delay**
+
+`cal_delay(recv_dir)` calculates the delay between sent and received frames based on timestamps.
+
+**Sending and Receiving Video**
+
+`send_and_recv_video(cfg, num)` handles the process of sending the video with QR codes and receiving the video, then processes the received video to calculate SSIM and delay.
+
+**Plotting Results**
+
+`show_experiment_fig(cfg, fig_dir)` generates and saves plots showing SSIM loss and load time based on the experiment results.
