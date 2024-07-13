@@ -49,10 +49,10 @@
 /testing
 
 /third_party/*
-!/third_party/ffmpeg
-!/third_party/openh264
-/third_party/openh264/*
-!/third_party/openh264/src
+# !/third_party/ffmpeg
+# !/third_party/openh264
+# /third_party/openh264/*
+# !/third_party/openh264/src
 
 /tools
 /tools_webrtc/android/profiling/flamegraph
