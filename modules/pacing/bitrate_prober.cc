@@ -97,7 +97,8 @@ void BitrateProber::CreateProbeCluster(
       (cluster_config.target_data_rate * cluster_config.target_duration)
           .bytes();
   RTC_DCHECK_GE(cluster.pace_info.probe_cluster_min_bytes, 0);
-  cluster.pace_info.send_bitrate_bps = cluster_config.target_data_rate.bps();
+  // cluster.pace_info.send_bitrate_bps = cluster_config.target_data_rate.bps();
+  cluster.pace_info.send_bitrate_bps = cluster_config.target_data_rate.bps() * 2;
   cluster.pace_info.probe_cluster_id = cluster_config.id;
   clusters_.push(cluster);
 
